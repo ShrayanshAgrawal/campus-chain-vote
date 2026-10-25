@@ -1,0 +1,29 @@
+{
+  "name": "campus-chain-vote",
+  "version": "1.0.0",
+  "description": "Tamper-proof campus voting (hybrid blockchain app)",
+  "scripts": {
+    "compile": "hardhat compile",
+    "test:contract": "hardhat test",
+    "test:backend": "npm --prefix backend test",
+    "test": "hardhat test && npm --prefix backend test",
+    "node": "hardhat node",
+    "deploy": "hardhat run scripts/deploy.js --network localhost",
+    "seed": "npm --prefix backend run seed && hardhat run scripts/seed-chain.js --network localhost",
+    "tamper-demo": "node scripts/tamper-demo.js",
+    "setup": "node scripts/setup.js",
+    "dev:backend": "npm --prefix backend run dev",
+    "dev:frontend": "npm --prefix frontend run dev",
+    "dev": "concurrently \"npm run dev:backend\" \"npm run dev:frontend\""
+  },
+  "devDependencies": {
+    "@nomicfoundation/hardhat-toolbox": "^5.0.0",
+    "@openzeppelin/contracts": "^5.1.0",
+    "@prisma/client": "^7.10.1",
+    "concurrently": "^9.1.2",
+    "csv-parse": "^7.0.3",
+    "dotenv": "^16.4.7",
+    "ethers": "^6.13.5",
+    "hardhat": "^2.22.18"
+  }
+}

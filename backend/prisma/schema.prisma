@@ -1,0 +1,131 @@
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+model Student {
+  id             String             @id @default(uuid())
+  enrollmentNo   String             // not globally unique — unique per adminId
+  name           String
+  email          String?            // optional now, no longer globally unique
+  phone          String?
+  passwordHash   String?
+  branch         String
+  year           Int
+  role           String             @default("STUDENT") // STUDENT or ADMIN
+  adminId        String?            // for STUDENT: the admin who created them; null for ADMINs
+  createdAt      DateTime           @default(now())
+  eligibility    VoterEligibility[]
+  otpCodes       OtpCode[]
+
+  @@unique([enrollmentNo, adminId])  // same enrollment can exist under different admins
+  @@index([enrollmentNo])
+  @@index([adminId])
+}
+
+model Election {
+  id              String             @id @default(uuid())
+  chainElectionId Int?               @unique
+  name            String
+  scope           String             @default("ALL")
+  status          String             @default("CREATED")
+  startTime       DateTime
+  endTime         DateTime
+  adminId         String             // the admin who owns this election
+  createdAt       DateTime           @default(now())
+  updatedAt       DateTime           @updatedAt
+  candidates      Candidate[]
+  eligibility     VoterEligibility[]
+  receipts        VoteReceipt[]
+  resultCache     ResultCache[]
+
+  @@index([chainElectionId])
+  @@index([adminId])
+}
+
+model Candidate {
+  id               String        @id @default(uuid())
+  electionId       String
+  chainCandidateId Int
+  name             String
+  enrollmentNo     String
+  branch           String
+  year             Int
+  manifesto        String
+  election         Election      @relation(fields: [electionId], references: [id], onDelete: Cascade)
+  resultCache      ResultCache[]
+
+  @@unique([electionId, chainCandidateId])
+  @@index([electionId])
+}
+
+model VoterEligibility {
+  id         String   @id @default(uuid())
+  electionId String
+  studentId  String
+  hasVoted   Boolean  @default(false)
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  election   Election @relation(fields: [electionId], references: [id], onDelete: Cascade)
+  student    Student  @relation(fields: [studentId], references: [id], onDelete: Cascade)
+
+  @@unique([electionId, studentId])
+  @@index([electionId, studentId])
+}
+
+model VoteReceipt {
+  id          String   @id @default(uuid())
+  electionId  String
+  nullifier   String   @unique
+  txHash      String   @unique
+  blockNumber Int
+  createdAt   DateTime @default(now())
+
+  election    Election @relation(fields: [electionId], references: [id], onDelete: Cascade)
+
+  @@index([electionId])
+}
+
+model OtpCode {
+  id        String   @id @default(uuid())
+  studentId String
+  codeHash  String
+  expiresAt DateTime
+  attempts  Int      @default(0)
+  used      Boolean  @default(false)
+  createdAt DateTime @default(now())
+
+  student   Student  @relation(fields: [studentId], references: [id], onDelete: Cascade)
+
+  @@index([studentId])
+}
+
+model AuditLog {
+  id        String   @id @default(uuid())
+  actorId   String?
+  action    String
+  details   String?
+  createdAt DateTime @default(now())
+
+  @@index([action])
+}
+
+model ResultCache {
+  id               String    @id @default(uuid())
+  electionId       String
+  candidateId      String
+  chainCandidateId Int
+  voteCount        Int       @default(0)
+  updatedAt        DateTime  @updatedAt
+
+  election         Election  @relation(fields: [electionId], references: [id], onDelete: Cascade)
+  candidate        Candidate @relation(fields: [candidateId], references: [id], onDelete: Cascade)
+
+  @@unique([electionId, candidateId])
+  @@index([electionId])
+}
